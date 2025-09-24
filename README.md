@@ -65,7 +65,7 @@ Siga os passos abaixo para configurar e executar o projeto.
 
 6.  **Execute a Aplicação:**
     ```bash
-    streamlit run app25.py
+    streamlit run app.py
     ```
 
 ## ✍️ Autor
