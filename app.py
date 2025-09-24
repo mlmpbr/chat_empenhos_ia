@@ -106,11 +106,16 @@ def format_brl(value):
 
 def plotar_grafico_barras(df: pd.DataFrame, coluna_categoria: str, coluna_valor: str):
     st.subheader("Resultado em Gráfico de Barras")
+    plt.style.use('seaborn-v0_8-whitegrid')
+
+    df = df.sort_values(by=coluna_categoria).reset_index(drop=True)
+
     if pd.api.types.is_numeric_dtype(df[coluna_categoria]):
         df[coluna_categoria] = df[coluna_categoria].astype(int).astype(str)
-    df = df.sort_values(by=coluna_categoria).reset_index(drop=True)
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df[coluna_categoria], df[coluna_valor], color='#66b3ff', label='Valor Total')
+    
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    ax.bar(df[coluna_categoria], df[coluna_valor], color='#3399FF', label='Valor Total', width=0.6)
     if len(df.index) > 1:
         x = np.arange(len(df[coluna_categoria])); y = df[coluna_valor].astype(float); z = np.polyfit(x, y, 1); p = np.poly1d(z)
         ax.plot(x, p(x), "r--", label="Linha de Tendência")
@@ -120,17 +125,31 @@ def plotar_grafico_barras(df: pd.DataFrame, coluna_categoria: str, coluna_valor:
     ax.grid(axis='y', linestyle='--', alpha=0.7)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, loc: f"R$ {int(val):,} ".replace(",", ".")))
     ax.legend()
-    plt.xticks(rotation=45); plt.tight_layout(); st.pyplot(fig, use_container_width=True)
+    limite_superior = df[coluna_valor].max() * 1.15 # Adiciona 15% de margem acima da maior barra
+    ax.set_ylim(0, limite_superior)
+    plt.xticks(rotation=45, ha='right'); plt.tight_layout(); st.pyplot(fig, use_container_width=True)
 
 def plotar_grafico_pizza(df: pd.DataFrame, coluna_labels: str, coluna_valores: str):
     st.subheader("Resultado em Gráfico de Pizza")
+    df = df.sort_values(by=coluna_labels).reset_index(drop=True)
+    # Aplica um estilo visual consistente
+    plt.style.use('seaborn-v0_8-whitegrid')
     if pd.api.types.is_numeric_dtype(df[coluna_labels]):
         df[coluna_labels] = df[coluna_labels].astype(int).astype(str)
-    fig, ax = plt.subplots(figsize=(10, 8))
+    # NOVO: Lógica para "explodir" (destacar) a maior fatia
+    explode = [0] * len(df) # Cria uma lista de zeros
+    maior_fatia_idx = df[coluna_valores].idxmax() # Encontra o índice da maior fatia
+
+    if maior_fatia_idx in df.index:
+        explode[df.index.get_loc(maior_fatia_idx)] = 0.1 # Destaca a maior fatia
+   
+    fig, ax = plt.subplots(figsize=(8, 4))
     wedges, _, autotexts = ax.pie(df[coluna_valores], autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
     ax.axis('equal'); ax.set_title(f'Distribuição por {coluna_labels.capitalize()}', fontsize=16)
-    ax.legend(wedges, df[coluna_labels], title=coluna_labels.capitalize(), loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-    plt.setp(autotexts, size=8, weight="bold"); st.pyplot(fig, use_container_width=True)
+    ax.legend(wedges, df[coluna_labels], title=coluna_labels.capitalize(), loc="center left", bbox_to_anchor=(1, 0, 0.5, 1), fontsize='small')
+    plt.setp(autotexts, size=8, weight="bold")
+    plt.tight_layout()
+    st.pyplot(fig, use_container_width=True)
 
 
 # --- Interface Principal do Streamlit (sem alterações) ---
@@ -147,8 +166,8 @@ if prompt := st.chat_input("Ex: traga o total empenhado por mês em 2024"):
                 sql_query = extrair_query_sql(resposta_llm)
                 
                 if sql_query:
-                    st.write("🔍 **Query Extraída:**")
-                    st.code(sql_query, language="sql")
+                    #st.write("🔍 **Query Extraída:**")
+                    #st.code(sql_query, language="sql")
                     df_resultado = run_query(sql_query)
 
                     if df_resultado is not None and not df_resultado.empty:

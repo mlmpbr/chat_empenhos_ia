@@ -8,3 +8,4 @@ __pycache__/
 # Ambientes virtuais (se existirem na pasta)
 venv/
 env/
+~$*
