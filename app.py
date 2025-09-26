@@ -66,14 +66,14 @@ SQL Query:
 prompt_sql_template = ChatPromptTemplate.from_template(template_sql)
 
 # --- Modelo Groq (substitui Gemini) ---
-model_a_ser_usado = "llama-3.1-70b-versatile"
+model_a_ser_usado = "llama-3.1-8b-instant"
 print(">>> MODELO USADO:", model_a_ser_usado)
 print("=====================================================")
 print(f"==> DEBUG: PREPARANDO PARA USAR O MODELO: '{model_a_ser_usado}'")
 print("=====================================================")
 
 chat_model = ChatGroq(
-    model="llama-3.1-70b-versatile",
+    model="llama-3.1-8b-instant",
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0
 )
