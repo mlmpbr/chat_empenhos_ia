@@ -73,7 +73,7 @@ prompt_sql_template = ChatPromptTemplate.from_template(template_sql)
 # <--- CORREÇÃO PRINCIPAL: A estrutura da chain foi consertada ---
 
 # 1. Defina o nome do modelo que vamos usar
-model_a_ser_usado = "gemini-1.5-pro-latest"
+model_a_ser_usado = "gemini-1.5-pro"
 
 # 2. Imprima a mensagem de debug ANTES de montar a chain
 print("=====================================================")
@@ -84,7 +84,7 @@ print("=====================================================")
 #    Note que a API Key já foi verificada no início
 chat_model = ChatGoogleGenerativeAI(
     temperature=0,
-    model="gemini-1.5-pro-latest",
+    model="gemini-1.5-pro",
     google_api_key=GOOGLE_API_KEY
 )
 
