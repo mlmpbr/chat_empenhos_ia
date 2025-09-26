@@ -84,7 +84,7 @@ print("=====================================================")
 #    Note que a API Key já foi verificada no início
 chat_model = ChatGoogleGenerativeAI(
     temperature=0,
-    model=model_a_ser_usado,
+    model="gemini-1.5-pro-latest",
     google_api_key=GOOGLE_API_KEY
 )
 
