@@ -66,6 +66,11 @@ prompt_sql_template = ChatPromptTemplate.from_template(template_sql)
 sql_chain = (
     RunnablePassthrough.assign(schema=get_schema)
     | prompt_sql_template
+# Imprime uma mensagem bem visível nos logs do Railway
+print(f"=====================================================")
+print(f"==> DEBUG: PREPARANDO PARA USAR O MODELO: '{model_a_ser_usado}'")
+print(f"=====================================================")
+# --- FIM DO CÓDIGO DE DEBUG ---
 # Arquivo alterado em 26/09/2025 para forçar deploy
     | ChatGoogleGenerativeAI(
         temperature=0,
