@@ -66,10 +66,10 @@ prompt_sql_template = ChatPromptTemplate.from_template(template_sql)
 sql_chain = (
     RunnablePassthrough.assign(schema=get_schema)
     | prompt_sql_template
-    # MUDANÇA 3: Substituindo ChatGroq por ChatGoogleGenerativeAI
+# Arquivo alterado em 26/09/2025 para forçar deploy
     | ChatGoogleGenerativeAI(
         temperature=0,
-        model="gemini-1.5-pro-latest",
+        model="gemini-1.5-pro-latest", # Modelo ja estava correto aqui
         google_api_key=os.getenv("GOOGLE_API_KEY")
     )
     | StrOutputParser()
