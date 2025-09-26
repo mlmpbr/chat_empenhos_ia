@@ -9,7 +9,6 @@ from sqlalchemy import create_engine
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
-# MUDANÇA 1: Importando o ChatGoogleGenerativeAI no lugar do ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # --- Configurações Iniciais ---
@@ -21,16 +20,24 @@ st.set_page_config(
 # Carrega as variáveis do arquivo .env
 load_dotenv()
 
+# --- Verificação de Variáveis de Ambiente ---
+# <--- MELHORIA DE ROBUSTEZ: Verificando as chaves antes de tudo ---
+DB_URI = os.getenv("DB_URI")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+if not DB_URI:
+    st.error("ERRO CRÍTICO: A variável de ambiente DB_URI não foi configurada.")
+    st.stop()
+if not GOOGLE_API_KEY:
+    st.error("ERRO CRÍTICO: A variável de ambiente GOOGLE_API_KEY não foi configurada.")
+    st.stop()
+
 # --- Conexão com o Banco de Dados ---
 def get_connection():
-    # MUDANÇA 2: Lendo a conexão do banco de dados do .env para mais segurança
-    db_uri = os.getenv("DB_URI")
-    if not db_uri:
-        st.error("A variável de ambiente DB_URI não foi configurada no arquivo .env")
-        st.stop() # Para a execução se o banco não estiver configurado
-    return create_engine(db_uri)
+    # Agora usa a variável já verificada
+    return create_engine(DB_URI)
 
-# --- Schema e Prompt para o LLM ---
+# --- Schema e Prompt para o LLM (sem alterações) ---
 def get_schema(_):
     """Define o schema da tabela para o LLM."""
     return """
@@ -62,21 +69,30 @@ SQL Query:
 """
 prompt_sql_template = ChatPromptTemplate.from_template(template_sql)
 
-# --- Chain do LangChain ---
+# --- Lógica do LangChain (Chain Corrigida) ---
+# <--- CORREÇÃO PRINCIPAL: A estrutura da chain foi consertada ---
+
+# 1. Defina o nome do modelo que vamos usar
+model_a_ser_usado = "gemini-1.5-pro-latest"
+
+# 2. Imprima a mensagem de debug ANTES de montar a chain
+print("=====================================================")
+print(f"==> DEBUG: PREPARANDO PARA USAR O MODELO: '{model_a_ser_usado}'")
+print("=====================================================")
+
+# 3. Crie a "peça" do modelo de chat separadamente
+#    Note que a API Key já foi verificada no início
+chat_model = ChatGoogleGenerativeAI(
+    temperature=0,
+    model=model_a_ser_usado,
+    google_api_key=GOOGLE_API_KEY
+)
+
+# 4. Agora, monte a sua "linha de montagem" (chain) de forma limpa
 sql_chain = (
     RunnablePassthrough.assign(schema=get_schema)
     | prompt_sql_template
-# Imprime uma mensagem bem visível nos logs do Railway
-print(f"=====================================================")
-print(f"==> DEBUG: PREPARANDO PARA USAR O MODELO: '{model_a_ser_usado}'")
-print(f"=====================================================")
-# --- FIM DO CÓDIGO DE DEBUG ---
-# Arquivo alterado em 26/09/2025 para forçar deploy
-    | ChatGoogleGenerativeAI(
-        temperature=0,
-        model="gemini-1.5-pro-latest", # Modelo ja estava correto aqui
-        google_api_key=os.getenv("GOOGLE_API_KEY")
-    )
+    | chat_model
     | StrOutputParser()
 )
 
@@ -137,17 +153,16 @@ def plotar_grafico_barras(df: pd.DataFrame, coluna_categoria: str, coluna_valor:
 def plotar_grafico_pizza(df: pd.DataFrame, coluna_labels: str, coluna_valores: str):
     st.subheader("Resultado em Gráfico de Pizza")
     df = df.sort_values(by=coluna_labels).reset_index(drop=True)
-    # Aplica um estilo visual consistente
     plt.style.use('seaborn-v0_8-whitegrid')
     if pd.api.types.is_numeric_dtype(df[coluna_labels]):
         df[coluna_labels] = df[coluna_labels].astype(int).astype(str)
-    # NOVO: Lógica para "explodir" (destacar) a maior fatia
-    explode = [0] * len(df) # Cria uma lista de zeros
-    maior_fatia_idx = df[coluna_valores].idxmax() # Encontra o índice da maior fatia
+
+    explode = [0] * len(df)
+    maior_fatia_idx = df[coluna_valores].idxmax()
 
     if maior_fatia_idx in df.index:
-        explode[df.index.get_loc(maior_fatia_idx)] = 0.1 # Destaca a maior fatia
-   
+        explode[df.index.get_loc(maior_fatia_idx)] = 0.1
+    
     fig, ax = plt.subplots(figsize=(8, 4))
     wedges, _, autotexts = ax.pie(df[coluna_valores], autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
     ax.axis('equal'); ax.set_title(f'Distribuição por {coluna_labels.capitalize()}', fontsize=16)
@@ -171,8 +186,6 @@ if prompt := st.chat_input("Ex: traga o total empenhado por mês em 2024"):
                 sql_query = extrair_query_sql(resposta_llm)
                 
                 if sql_query:
-                    #st.write("🔍 **Query Extraída:**")
-                    #st.code(sql_query, language="sql")
                     df_resultado = run_query(sql_query)
 
                     if df_resultado is not None and not df_resultado.empty:
